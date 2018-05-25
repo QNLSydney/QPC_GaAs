@@ -1,34 +1,44 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 30 12:21:38 2018
+Created on Fri May 25 09:41:38 2018
 
-@author: Administrator
+@author: Alexis Jouan
 """
+
 
 # Log all output
 from IPython import get_ipython
 ip = get_ipython()
 ip.magic("logstop")
-ip.magic("logstart -o -t iPython_Logs\\fivedot_log.py rotate")
+ip.magic("logstart -o -t iPython_Logs/QPC_GaAs_log.py rotate")
+
+#Lock-In IP address : 10.66.42.251
 
 import qcodes as qc
-from qcodes import ChannelList, Parameter
+import pyvisa
+import matplotlib.pyplot as plt
+import numpy as np
+import time 
+import visa
+
+
+#from time import sleep, monotonic
+
 from qcodes.dataset.measurements import Measurement
 from qcodes.dataset.plotting import plot_by_id
-from qcodes.dataset.data_set import load_by_id, load_by_counter
+from qcodes.dataset.data_set import load_by_id
+from qcodes.dataset import experiment_container
+
 from qcodes import Station
-from qcodes.dataset.experiment_container import load_experiment_by_name
-from qcodes.instrument_drivers.Keysight.N5245A import N5245A
+from qcodes.dataset.experiment_container import Experiment, load_last_experiment, new_experiment, load_experiment_by_name
+from qcodes.tests.instrument_mocks import DummyInstrument
+from qcodes.dataset.param_spec import ParamSpec
+from qcodes.dataset.data_export import get_shaped_data_by_runid
 
+from qcodes.instrument.parameter import ManualParameter
+
+# Module to use system1.yaml
 from qdev_wrappers.station_configurator import StationConfigurator
-
-import qcodes_measurements as qcm
-from qcodes_measurements.plot.plot_tools import *
-
-import time
-import numpy as np
-
-from dac_params import *
 
 # Close any instruments that may already be open
 instruments = list(qc.Instrument._all_instruments.keys())
@@ -37,41 +47,74 @@ for instrument in instruments:
     instr = instr()
     instr.close()
 
-exp_name = 'QDP_FIVEDOT'
-sample_name = 'M08-10-16.2_0003_CHER'
+# Set up experiment
+exp_name = 'qcodes_controls_mdac'
+sample_name = 'mdac'
 
-exp = load_experiment_by_name(exp_name, sample=sample_name)
-print('Experiment loaded. Last ID no:', exp.last_counter)
+try:
+    exp = load_experiment_by_name(exp_name, sample=sample_name)
+    print('Experiment loaded. Last ID no:', exp.last_counter)
+except ValueError:
+    exp = new_experiment(exp_name, sample_name)
+    print('Started new experiment')
 
 scfg = StationConfigurator()
 
 mdac = scfg.load_instrument('mdac')
-lockin = scfg.load_instrument('sr860')
-ithaco = scfg.load_instrument('ithaco')
+#lockin = scfg.load_instrument('sr860')
+#ithaco = scfg.load_instrument('ithaco')
+multimeter=scfg.load_instrument('Keysight')
 
-# Set up gate sets from Bottom
-#OHMICS_1_NUMS = (x-1 for x in tuple())
-#GATES_1_NUMS = (x-1 for x in tuple())
-#OHMICS_2_NUMS = (x-1 for x in (36, 29, 20, 27))
-#GATES_2_NUMS = (x-1 for x in (47, 42, 41, 31, 11, 37, 45, 28, 34, 24, 39, 
-#                              7, 19, 18, 30, 5))
-#SHORTS_NUMS = (x-1 for x in (15, 13, 40, 3, 48, 10, 1, 12, 14, 2))
+dummy_time = DummyInstrument(name="dummy_time")
+time_zero = time.time()
+def getTime():
+    return time.time() - time_zero
+dummy_time.add_parameter('seconds',
+                  label='time',
+                  unit='s',
+                  get_cmd=getTime,
+                  set_cmd=lambda x: x)
+dummy_time.add_parameter('dummy_set',
+                         label='count',
+                         set_cmd=lambda x: x)
+dummy_time.seconds()
 
-# Set up gate sets
-OHMICS_1_NUMS = (x-1 for x in (37, 48, 24, 11, 19, 7))
-GATES_1_NUMS = (x-1 for x in (9, 32, 34, 31, 23, 46, 47, 42, 28, 38, 36, 21, 45, 10, 
-                       22, 44, 35, 30, 18, 29, 17, 5))
-OHMICS_2_NUMS = (x-1 for x in (14, 15))
-GATES_2_NUMS = (x-1 for x in (49, 50, 51, 52, 53, 26, 57, 58, 59, 60, 61, 16, 41, 3, 
-                              2, 40, 56, 55, 54, 62, 63, 64))
-SHORTS_NUMS = (x-1 for x in (1, 25, 8, 20, 13, 12))
+def veryfirst():
+    print('Starting the measurement')
+    global time_zero
+    time_zero = time.time()
 
-SHORTS = qcm.make_channel_list(mdac, "Shorts", SHORTS_NUMS)
-OHMICS_1 = qcm.make_channel_list(mdac, "Dev_1_Ohmics", OHMICS_1_NUMS)
-GATES_1 = qcm.make_channel_list(mdac, "Dev_1_Gates", GATES_1_NUMS)
-OHMICS_2 = qcm.make_channel_list(mdac, "Dev_2_Ohmics", OHMICS_2_NUMS)
-GATES_2 = qcm.make_channel_list(mdac, "Dev_2_Gates", GATES_2_NUMS)
-OHMICS = OHMICS_1 + OHMICS_2
-GATES = GATES_1 + GATES_2
 
-GATES.rate(0.05)
+def thelast():
+    print('End of measurement')
+
+
+
+def make_title(dataset):
+    '''Make a descriptive title for the dataset.'''
+    experiment = experiment_container.load_experiment(dataset.exp_id)
+    title = '{} on {} - {}.{} ({})'
+    title = title.format(experiment.name, experiment.sample_name,
+                         experiment.exp_id, dataset.counter, dataset.run_id)
+    return title
+        
+def redraw(run_id, axes, cbars):
+    '''Call plot_by_id to plot the available data on axes.'''
+    pause_time = 0.001
+    dataset = load_by_id(run_id)
+    if not dataset: # there is not data available yet
+        axes, cbars = [], []
+    elif not axes: # there is data available but no plot yet
+        axes, cbars = plot_by_id(run_id)
+    else: # there is a plot already
+        for axis in axes:
+            axis.clear()
+        for cbar in cbars:
+            if cbar is not None:
+                cbar.remove()
+        axes, cbars = plot_by_id(run_id, axes)
+        title = make_title(dataset)
+        for axis in axes:
+            axis.set_title(title)
+        plt.pause(pause_time)
+    return axes, cbars

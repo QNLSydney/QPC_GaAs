@@ -3,7 +3,7 @@
         "loglevel": "INFO",
         "default_fmt": "data/{date}/#{counter}_{name}_{time}",
         "register_magic": true,
-        "db_location": "/Users/alexisjouan/Documents/Data_experiment/experiments.db",
+        "db_location": "C:\\Users\\QNL\\Documents\\Experiments\\experiments.db",
         "db_debug": false
     },
     "gui" :{
@@ -13,12 +13,12 @@
         "defaultcolormap": "hot"
     },
     "user": {
-        "scriptfolder": "/Users/alexisjouan/Desktop/Python_exp/QPC_GaAs",
-        "mainfolder": "/Users/alexisjouan/Desktop/Python_exp/QPC_GaAs"
+        "scriptfolder": "C:\\Users\\QNL\\Documents\\QPC_GaAs",
+        "mainfolder": "C:\\Users\\QNL\\Documents\\QPC_GaAs"
     },
     "station_configurator": {
         "enable_forced_reconnect": false,
-        "default_folder": "/Users/alexisjouan/Desktop/Python_exp/QPC_GaAs",
+        "default_folder": "C:\\Users\\QNL\\Documents\\QPC_GaAs",
         "default_file": "system1.yaml"
     }
 }

@@ -3,9 +3,9 @@ instruments:
   # this is what is looked up by the add_instrument method of StationConfig
 
   mdac:
-    driver: qcodes.instrument_drivers.qnl.MDAC
+    driver: MDAC
     type: MDAC
-    address: ASRL5::INSTR
+    address: ASRL3::INSTR
     # if true any existing connection will be closed when instatiated
     # default (if left out) is false
     auto_reconnect: true
@@ -29,59 +29,59 @@ instruments:
       #   monitor: true
 
       # LEFT DOUBLE DOT, DOT 1
-      ch09.voltage:
+      ch01.voltage:
         alias: LW1_1
         label: LW1_1
-        limits: -2.5,0.25
-        monitor: true
+        limits: -5,5
+        monitor: false
       
       temperature:
         label: MDAC temperature
-        monitor: true
+        monitor: false
 
-  sr860:
+#  sr860:
     # class of the instrument
-    driver: qcodes.instrument_drivers.stanford_research.SR860
-    type: SR860
+#    driver: qcodes.instrument_drivers.stanford_research.SR860
+#    type: SR860
     # visa address
-    address: TCPIP0::10.66.42.251::inst0::INSTR
+#    address: TCPIP0::10.66.42.251::inst0::INSTR
     # all following fields are optional:
     # init:
       # Use this to simulate an instrument if you don't have 
       # a physical copy at hand
       # visalib: 'lockin.yaml@sim'
-    add_parameters:
-      X_current:
-        source: X
-        label: In-Phase Current
-        unit: A
-        scale: 1000000
-      Y_current:
-        source: Y
-        label: Quadrature Current
-        unit: A
-        scale: 1000000
-      R_current:
-        source: R
-        label: Magnitude
-        unit: A
-        scale: 1000000
-    parameters:
-      time_constant:
-        label: lockin tc
-        monitor: True
-      sensitivity:
-        label: lockin sensitivity
-        monitor: True
-      amplitude:
-        label: excitation
-        scale: 10000
-        monitor: True
-      sine_outdc:
-        label: DC offset
-        scale: 10000
-        monitor: True
-    auto_reconnect: true
+#    add_parameters:
+#      X_current:
+#        source: X
+#        label: In-Phase Current
+#        unit: A
+#        scale: 1000000
+#      Y_current:
+#        source: Y
+#        label: Quadrature Current
+#        unit: A
+#        scale: 1000000
+#      R_current:
+#        source: R
+#        label: Magnitude
+#        unit: A
+#        scale: 1000000
+#    parameters:
+#      time_constant:
+#        label: lockin tc
+#        monitor: True
+#      sensitivity:
+#        label: lockin sensitivity
+#        monitor: True
+#      amplitude:
+#        label: excitation
+#        scale: 10000
+#        monitor: True
+#      sine_outdc:
+#        label: DC offset
+#        scale: 10000
+#        monitor: True
+#    auto_reconnect: true
   ithaco:
     driver: qcodes.instrument_drivers.ithaco.Ithaco_1211
     type: Ithaco_1211
@@ -108,7 +108,11 @@ instruments:
     #   unit: #
     #   limits:
     #   monitor: true
-#
+  Keysight:
+    driver: qcodes.instrument_drivers.Keysight.Keysight_34465A
+    type: Keysight_34465A
+    address: TCPIP0::10.66.42.169::inst0::INSTR
+
 #
 # Alternative way of specifying parameters:
 # parameters:
